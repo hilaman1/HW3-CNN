@@ -14,60 +14,46 @@ def part1_generation_params():
     temperature = .0001
     # TODO: Tweak the parameters to generate a literary masterpiece.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    start_seq = "Prince of Denmark stood"
+    temperature = 0.5
     # ========================
     return start_seq, temperature
 
 
 part1_q1 = r"""
-**Your answer:**
+There are some reasons:
 
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+1. processing the entire text as a single input sequence can be computationally expensive
+2. training on smaller sequences prevents vanishing or exploding gradient problems that can occur when processing long sequences.
+3. it encourages the model to learn higher-level patterns and generate creative outputs
 
 """
 
 part1_q2 = r"""
-**Your answer:**
 
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+The hidden states of the model retains information from previously generated text, 
+it allows the model to exhibit memory longer than the individual sequence length.
 
 """
 
 part1_q3 = r"""
-**Your answer:**
 
+In RNN the order of the data is important, each batch relies on the hidden state and information learned from the previous batch.
+Also the gradients are propagated through time steps within each batch
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
 
 """
 
 part1_q4 = r"""
-**Your answer:**
 
+1. The temperature controls the level of randomness in the generated text, for lower values
+it decreases the randomness, hence we get more appropriate words.
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+2. When the temperature is very high, the softmax emphasises the lower score
+which makes the output distribution more uniformly, and then we can more surprised of the network choices.
+
+3. When the temperature is very low, the softmax flattens the distribution,
+which makes only the high values to be relevant and therefore the generated word.
 
 """
 # ==============
