@@ -22,7 +22,24 @@ class Discriminator(nn.Module):
         # You can then use either an affine layer or another conv layer to
         # flatten the features.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        # the code is based on the example we saw in class
+        self.nc = in_size[0]
+        ndf = 64  # as in DCGAN paper
+        self.model = nn.Sequential(
+            nn.Conv2d(self.nc, ndf, 4, 2, 1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 8),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
+        )
+
         # ========================
 
     def forward(self, x):
@@ -35,7 +52,7 @@ class Discriminator(nn.Module):
         # No need to apply sigmoid to obtain probability - we'll combine it
         # with the loss due to improved numerical stability.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        y = self.model(x).view(x.shape[0], -1)
         # ========================
         return y
 
@@ -56,7 +73,30 @@ class Generator(nn.Module):
         # section or implement something new.
         # You can assume a fixed image size.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        # the code is based on the example we saw in class
+        self.ngf = 64  # as in DCGAN paper
+        self.model = nn.Sequential(
+            # input is Z, going into a convolution
+            nn.ConvTranspose2d(self.z_dim, self.ngf * 8, featuremap_size, 1, 0, bias=False),
+            nn.BatchNorm2d(self.ngf * 8),
+            nn.ReLU(True),
+            # state size. (out_channels*8) x 4 x 4
+            nn.ConvTranspose2d(self.ngf * 8, self.ngf * 4, featuremap_size, 2, 1, bias=False),
+            nn.BatchNorm2d(self.ngf * 4),
+            nn.ReLU(True),
+            # state size. (out_channels*4) x 8 x 8
+            nn.ConvTranspose2d(self.ngf * 4, self.ngf * 2, featuremap_size, 2, 1, bias=False),
+            nn.BatchNorm2d(self.ngf * 2),
+            nn.ReLU(True),
+            # state size. (out_channels*2) x 16 x 16
+            nn.ConvTranspose2d(self.ngf * 2, self.ngf, featuremap_size, 2, 1, bias=False),
+            nn.BatchNorm2d(self.ngf),
+            nn.ReLU(True),
+            # state size. (out_channels) x 32 x 32
+            nn.ConvTranspose2d(self.ngf, out_channels, featuremap_size, 2, 1, bias=False),
+            nn.Tanh()
+        )
+
         # ========================
 
     def sample(self, n, with_grad=False):
@@ -73,7 +113,8 @@ class Generator(nn.Module):
         # Generate n latent space samples and return their reconstructions.
         # Don't use a loop.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        noisy_pictures = torch.randn(n, self.z_dim, device=device, requires_grad=with_grad)
+        samples = self.forward(noisy_pictures)
         # ========================
         return samples
 
@@ -87,7 +128,7 @@ class Generator(nn.Module):
         # Don't forget to make sure the output instances have the same scale
         # as the original (real) images.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        x = self.model(z.view(z.shape[0], z.shape[1], 1, 1))
         # ========================
         return x
 
