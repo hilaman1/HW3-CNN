@@ -73,7 +73,7 @@ class Trainer(abc.ABC):
                 self.model.load_state_dict(saved_state['model_state'])
 
         for epoch in range(num_epochs):
-            save_checkpoint = False
+            save_checkpoint = True  # was set to False for some reason, which caused issues
             verbose = False  # pass this to train/test_epoch.
             if epoch % print_every == 0 or epoch == num_epochs - 1:
                 verbose = True
@@ -289,9 +289,13 @@ class VAETrainer(Trainer):
     def train_batch(self, batch) -> BatchResult:
         x, _ = batch
         x = x.to(self.device)  # Image batch (N,C,H,W)
-        # TODO: Train a VAE on one batch.
+        # Train a VAE on one batch.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        xr, z_mu, z_log_sigma2 = self.model(x)
+        loss, data_loss, _ = self.loss_fn(x, xr, z_mu, z_log_sigma2)
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
         # ========================
 
         return BatchResult(loss.item(), 1/data_loss.item())
@@ -301,9 +305,10 @@ class VAETrainer(Trainer):
         x = x.to(self.device)  # Image batch (N,C,H,W)
 
         with torch.no_grad():
-            # TODO: Evaluate a VAE on one batch.
+            # Evaluate a VAE on one batch.
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            xr, z_mu, z_log_sigma2 = self.model(x)
+            loss, data_loss, _ = self.loss_fn(x, xr, z_mu, z_log_sigma2)
             # ========================
 
         return BatchResult(loss.item(), 1/data_loss.item())

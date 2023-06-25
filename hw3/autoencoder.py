@@ -9,7 +9,7 @@ class EncoderCNN(nn.Module):
 
         modules = []
 
-        # TODO: Implement a CNN. Save the layers in the modules list.
+        # Implement a CNN. Save the layers in the modules list.
         # The input shape is an image batch: (N, in_channels, H_in, W_in).
         # The output shape should be (N, out_channels, H_out, W_out).
         # You can assume H_in, W_in >= 64.
@@ -17,7 +17,21 @@ class EncoderCNN(nn.Module):
         # You can use any Conv layer parameters, use pooling or only strides,
         # use any activation functions, use BN or Dropout, etc.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        out_channels_init = 64
+        # Conv 4×4 64, BatchNorm, ReLU
+        modules.append(nn.Conv2d(in_channels, out_channels_init, 4, 2, 1, bias=False))
+        modules.append(nn.BatchNorm2d(out_channels_init))
+        modules.append(nn.ReLU(inplace=True))
+        # Conv 4×4 128, BNorm, ReLU
+        modules.append(nn.Conv2d(out_channels_init, out_channels_init * 2, 4, 2, 1, bias=False))
+        modules.append(nn.BatchNorm2d(out_channels_init * 2))
+        modules.append(nn.ReLU(inplace=True))
+        # Conv 4×4 256, BNorm, ReLU
+        modules.append(nn.Conv2d(out_channels_init * 2, out_channels_init * 4, 4, 2, 1, bias=False))
+        modules.append(nn.BatchNorm2d(out_channels_init * 4))
+        modules.append(nn.ReLU(inplace=True))
+        # Output layer
+        modules.append(nn.Conv2d(out_channels_init * 4, out_channels, 4, 1, 0, bias=False))
         # ========================
         self.cnn = nn.Sequential(*modules)
 
@@ -31,7 +45,7 @@ class DecoderCNN(nn.Module):
 
         modules = []
 
-        # TODO: Implement the "mirror" CNN of the encoder.
+        # Implement the "mirror" CNN of the encoder.
         # For example, instead of Conv layers use transposed convolutions,
         # instead of pooling do unpooling (if relevant) and so on.
         # You should have the same number of layers as in the Encoder,
@@ -39,7 +53,21 @@ class DecoderCNN(nn.Module):
         # Output should be a batch of images, with same dimensions as the
         # inputs to the Encoder were.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        in_channels_final = 64
+        # ConvTranspose 4×4 256, BatchNorm, ReLU
+        modules.append(nn.ConvTranspose2d(in_channels, in_channels_final * 4, 4, 1, 0, bias=False))
+        modules.append(nn.BatchNorm2d(in_channels_final * 4))
+        modules.append(nn.ReLU(True))
+        # ConvTranspose 4×4 128, BatchNorm, ReLU
+        modules.append(nn.ConvTranspose2d(in_channels_final * 4, in_channels_final * 2, 4, 2, 1, bias=False))
+        modules.append(nn.BatchNorm2d(in_channels_final * 2))
+        modules.append(nn.ReLU(True))
+        # ConvTranspose 4×4 64, BatchNorm, ReLU
+        modules.append(nn.ConvTranspose2d(in_channels_final * 2, in_channels_final, 4, 2, 1, bias=False))
+        modules.append(nn.BatchNorm2d(in_channels_final))
+        modules.append(nn.ReLU(True))
+        # Output layer
+        modules.append(nn.ConvTranspose2d(in_channels_final, out_channels, 4, 2, 1, bias=False))
         # ========================
         self.cnn = nn.Sequential(*modules)
 
@@ -65,9 +93,11 @@ class VAE(nn.Module):
 
         self.features_shape, n_features = self._check_features(in_size)
 
-        # TODO: Add parameters needed for encode() and decode().
+        # Add parameters needed for encode() and decode().
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        self.nn_mu = nn.Sequential(nn.Linear(n_features, z_dim))
+        self.nn_log_sigma2 = nn.Sequential(nn.Linear(n_features, z_dim))
+        self.nn_z = nn.Sequential(nn.Linear(z_dim, n_features))
         # ========================
 
     def _check_features(self, in_size):
@@ -82,22 +112,31 @@ class VAE(nn.Module):
             return h.shape[1:], torch.numel(h)//h.shape[0]
 
     def encode(self, x):
-        # TODO: Sample a latent vector z given an input x.
+        # Sample a latent vector z given an input x.
         # 1. Use the features extracted from the input to obtain mu and
         # log_sigma2 (mean and log variance) of the posterior p(z|x).
         # 2. Apply the reparametrization trick.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        device = next(self.parameters()).device
+        h = self.features_encoder(x.to(device))
+        h = h.view(h.size(0), -1)  # vectorize
+        mu = self.nn_mu(h)
+        log_sigma2 = self.nn_log_sigma2(h)
+        sigma = torch.exp(0.5 * log_sigma2)  # the 0.5 factor is to cancel the square of log(sigma^2)
+        eps = torch.randn_like(sigma)  # eps taken from a normal distribution with mean 0 and variance 1
+        z = mu + sigma * eps
         # ========================
 
         return z, mu, log_sigma2
 
     def decode(self, z):
-        # TODO: Convert a latent vector back into a reconstructed input.
+        # Convert a latent vector back into a reconstructed input.
         # 1. Convert latent to features.
         # 2. Apply features decoder.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        h = self.nn_z(z)
+        h = h.view(-1, *self.features_shape)  # vectorize
+        x_rec = self.features_decoder(h)
         # ========================
 
         # Scale to [-1, 1] (same dynamic range as original images).
@@ -107,11 +146,12 @@ class VAE(nn.Module):
         samples = []
         device = next(self.parameters()).device
         with torch.no_grad():
-            # TODO: Sample from the model.
+            # Sample from the model.
             # Generate n latent space samples and return their reconstructions.
             # Remember that for the model, this is like inference.
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            samples = self.decode(torch.randn((n, self.z_dim), device=device))
+            samples = samples.to('cpu')  # move back to cpu as the device
             # ========================
         return samples
 
@@ -135,12 +175,15 @@ def vae_loss(x, xr, z_mu, z_log_sigma2, x_sigma2):
     all three are scalars, averaged over the batch dimension.
     """
     loss, data_loss, kldiv_loss = None, None, None
-    # TODO: Implement the VAE pointwise loss calculation.
+    # Implement the VAE pointwise loss calculation.
     # Remember:
     # 1. The covariance matrix of the posterior is diagonal.
     # 2. You need to average over the batch dimension.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    N = x.size(0)
+    data_loss = nn.functional.mse_loss(x, xr)
+    kldiv_loss = (1 / N) * (z_log_sigma2.exp() + z_mu.pow(2) - 1 - z_log_sigma2).sum()  # same as in lecture 10
+    loss = (1 / x_sigma2) * data_loss + kldiv_loss
     # ========================
 
     return loss, data_loss, kldiv_loss
