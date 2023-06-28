@@ -76,23 +76,18 @@ class Generator(nn.Module):
         # the code is based on the example we saw in class
         self.ngf = 64  # as in DCGAN paper
         self.model = nn.Sequential(
-            # input is Z, going into a convolution
             nn.ConvTranspose2d(self.z_dim, self.ngf * 8, featuremap_size, 1, 0, bias=False),
             nn.BatchNorm2d(self.ngf * 8),
             nn.ReLU(True),
-            # state size. (out_channels*8) x 4 x 4
             nn.ConvTranspose2d(self.ngf * 8, self.ngf * 4, featuremap_size, 2, 1, bias=False),
             nn.BatchNorm2d(self.ngf * 4),
             nn.ReLU(True),
-            # state size. (out_channels*4) x 8 x 8
             nn.ConvTranspose2d(self.ngf * 4, self.ngf * 2, featuremap_size, 2, 1, bias=False),
             nn.BatchNorm2d(self.ngf * 2),
             nn.ReLU(True),
-            # state size. (out_channels*2) x 16 x 16
             nn.ConvTranspose2d(self.ngf * 2, self.ngf, featuremap_size, 2, 1, bias=False),
             nn.BatchNorm2d(self.ngf),
             nn.ReLU(True),
-            # state size. (out_channels) x 32 x 32
             nn.ConvTranspose2d(self.ngf, out_channels, featuremap_size, 2, 1, bias=False),
             nn.Tanh()
         )
@@ -152,8 +147,16 @@ def discriminator_loss_fn(y_data, y_generated, data_label=0, label_noise=0.0):
     # TODO: Implement the discriminator loss.
     # See torch's BCEWithLogitsLoss for a numerically stable implementation.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
-    # ========================
+    # sample noise from range [-label_noise/2, label_noise/2] for data
+    data_noise = torch.rand(y_data.shape, device=y_data.device) * label_noise - label_noise / 2
+    # add noise to data_label
+    data_labels = data_label + data_noise
+    # sample noise from range [-label_noise/2, label_noise/2] for generated
+    gen_noise = torch.rand(y_generated.shape, device=y_generated.device) * label_noise - label_noise / 2
+    gen_labels = torch.ones(y_generated.shape, device=y_generated.device) * (1 - data_label) + gen_noise
+    loss_fn = nn.BCEWithLogitsLoss()
+    loss_data = torch.mean(loss_fn(y_data, data_labels))
+    loss_generated = torch.mean(loss_fn(y_generated, gen_labels))    # ========================
     return loss_data + loss_generated
 
 
@@ -171,7 +174,8 @@ def generator_loss_fn(y_generated, data_label=0):
     # Think about what you need to compare the input to, in order to
     # formulate the loss in terms of Binary Cross Entropy.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    loss_fn = nn.BCEWithLogitsLoss()
+    loss = loss_fn(y_generated, torch.ones(y_generated.shape, device=y_generated.device) * data_label)
     # ========================
     return loss
 
@@ -191,7 +195,11 @@ def train_batch(dsc_model: Discriminator, gen_model: Generator,
     # 2. Calculate discriminator loss
     # 3. Update discriminator parameters
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    dsc_optimizer.zero_grad()
+    gen_data = gen_model.sample(x_data.shape[0])
+    dsc_loss = dsc_loss_fn(dsc_model(x_data), dsc_model(gen_data))
+    dsc_loss.backward()
+    dsc_optimizer.step()
     # ========================
 
     # TODO: Generator update
@@ -199,7 +207,11 @@ def train_batch(dsc_model: Discriminator, gen_model: Generator,
     # 2. Calculate generator loss
     # 3. Update generator parameters
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    gen_optimizer.zero_grad()
+    gen_data = gen_model.sample(x_data.shape[0], with_grad=True)
+    gen_loss = gen_loss_fn(dsc_model(gen_data))
+    gen_loss.backward()
+    gen_optimizer.step()
     # ========================
 
     return dsc_loss.item(), gen_loss.item()

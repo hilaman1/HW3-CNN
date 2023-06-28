@@ -127,7 +127,7 @@ def part3_gan_hyperparams():
     )
     # TODO: Tweak the hyperparameters to train your GAN.
     # ====== YOUR CODE: ======
-    # choose the hyperparameters by the paper
+    # we chose the hyperparameters by the paper, except for batch size
     hypers = dict(
         batch_size=16, z_dim=128,
         data_label=1, label_noise=0.2,
@@ -147,41 +147,50 @@ def part3_gan_hyperparams():
 
 
 part3_q1 = r"""
-**Your answer:**
 
+We have two loss functions, one for the generator and one for the discriminator.
+We want to train the discriminator to distinguish between real and fake images, and we want to train the generator to
+fool the discriminator by generating images that are more similar to the real images.
+We want to maximize the discriminator's loss function and minimize the generator's loss function.
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+When we train the discriminator, we don't want to update the generator's weights because it will make the generator
+worse at fooling the discriminator, so we discard the gradients.
+When we train the generator, we want to maintain the gradients of its loss function so the generator will get better at
+fooling the discriminator. 
+
 
 """
 
 part3_q2 = r"""
-**Your answer:**
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+1. When training a GAN to generate images, we should not decide to stop training only based on the fact that the 
+Generator loss is below some threshold.
+The reason is that the Generator loss is not a good indicator of the quality of the generated images.
+The Generator loss is a measure of how well the Generator is able to fool the Discriminator, but it does not measure how
+ well the Generator is able to generate images that look like real images.
+For example, the Generator can generate images that look like real images, but they are all the same image or just a
+ small set of images, so the Generator loss will be low, but the images will not be good, as we saw in class.
+In addition, the Generator loss can be low because the Discriminator is not good at distinguishing between real and fake
+images. And thus we need to look at the Discriminator loss too.
+
+2. It means that the Generator is getting better at fooling the Discriminator (by generating images that look like
+real images), but the Discriminator is not getting better at distinguishing between real and fake images.
+
+This can happen if the Discriminator is not good enough to begin with, or if the Generator is getting better at
+fooling the Discriminator in a way that the Discriminator cannot learn to distinguish between real and fake images.
+    
 
 """
 
 part3_q3 = r"""
-**Your answer:**
 
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+The results we got when generating images with the VAE are blurry, and the results we got when generating images with 
+the GAN are sharp.
+The main difference is that the VAE is trained to reconstruct the input images and to keep the latent space prior
+distribution close to the standard normal distribution using a small latent space, which means that the images will be
+blurry. The GAN is trained to generate images that are similar to the real images, and thus blurry images are not
+good enough, so as the loss decreases, the images become sharper.
 
 """
 # ==============
