@@ -108,8 +108,13 @@ class Generator(nn.Module):
         # Generate n latent space samples and return their reconstructions.
         # Don't use a loop.
         # ====== YOUR CODE: ======
-        noisy_pictures = torch.randn(n, self.z_dim, device=device, requires_grad=with_grad)
-        samples = self.forward(noisy_pictures)
+        noisy_pictures = torch.randn(n, self.z_dim, device=device)
+        if with_grad:
+            with torch.enable_grad():
+                samples = self.forward(noisy_pictures)
+        else:
+            with torch.no_grad():
+                samples = self.forward(noisy_pictures)
         # ========================
         return samples
 
