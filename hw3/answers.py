@@ -176,7 +176,6 @@ images. And thus we need to look at the Discriminator loss too.
 
 2. It means that the Generator is getting better at fooling the Discriminator (by generating images that look like
 real images), but the Discriminator is not getting better at distinguishing between real and fake images.
-
 This can happen if the Discriminator is not good enough to begin with, or if the Generator is getting better at
 fooling the Discriminator in a way that the Discriminator cannot learn to distinguish between real and fake images.
     

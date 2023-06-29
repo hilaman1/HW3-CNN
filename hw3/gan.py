@@ -108,8 +108,13 @@ class Generator(nn.Module):
         # Generate n latent space samples and return their reconstructions.
         # Don't use a loop.
         # ====== YOUR CODE: ======
-        noisy_pictures = torch.randn(n, self.z_dim, device=device, requires_grad=with_grad)
-        samples = self.forward(noisy_pictures)
+        noisy_pictures = torch.randn(n, self.z_dim, device=device)
+        if with_grad:
+            with torch.enable_grad():
+                samples = self.forward(noisy_pictures)
+        else:
+            with torch.no_grad():
+                samples = self.forward(noisy_pictures)
         # ========================
         return samples
 
@@ -156,7 +161,8 @@ def discriminator_loss_fn(y_data, y_generated, data_label=0, label_noise=0.0):
     gen_labels = torch.ones(y_generated.shape, device=y_generated.device) * (1 - data_label) + gen_noise
     loss_fn = nn.BCEWithLogitsLoss()
     loss_data = torch.mean(loss_fn(y_data, data_labels))
-    loss_generated = torch.mean(loss_fn(y_generated, gen_labels))    # ========================
+    loss_generated = torch.mean(loss_fn(y_generated, gen_labels))
+    # ========================
     return loss_data + loss_generated
 
 
